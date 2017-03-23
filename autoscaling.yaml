@@ -4,23 +4,23 @@ parameters:
   image:
     type: string
     description: Image used for servers
-    default: f02629a2-33fe-49bb-91a5-5ade6ffbba04
+    default: 
   key:
     type: string
     description: SSH key to connect to the servers
-    default: jacob_rhosp10_key
+    default: 
   flavor:
     type: string
     description: flavor used by the web servers
-    default: s1.large
+    default: 
   network:
     type: string
     description: Network used by the server
-    default: d748a912-e622-4a23-be2b-377894061fa3
+    default: 
   subnet_id:
     type: string
     description: subnet on which the load balancer will be located
-    default: 95ce0e9f-2062-4086-89be-10bb5e6f4dbf
+    default: 
 resources:
   asg:
     type: OS::Heat::AutoScalingGroup
