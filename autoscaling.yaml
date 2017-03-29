@@ -34,6 +34,7 @@ resources:
           image: {get_param: image}
           key_name: {get_param: key}
           network: { get_param: network }
+          metadata: {"metering.stack": {get_param: "OS::stack_id"}}
   web_server_scaleup_policy:
     type: OS::Heat::ScalingPolicy
     properties:
