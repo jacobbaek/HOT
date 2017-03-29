@@ -35,6 +35,8 @@ resources:
           key_name: {get_param: key}
           network: { get_param: network }
           metadata: {"metering.stack": {get_param: "OS::stack_id"}}
+          user_data:
+            #!/bin/bash -v
   web_server_scaleup_policy:
     type: OS::Heat::ScalingPolicy
     properties:
