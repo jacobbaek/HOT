@@ -28,7 +28,7 @@ resources:
       min_size: 1
       max_size: 3
       resource:
-        type: https://raw.githubusercontent.com/jacobbaek/HOT/master/srv_template.yaml
+        type: https://raw.githubusercontent.com/jacobbaek/HOT/master/srv_without_lb_template.yaml
         properties:
           flavor: {get_param: flavor}
           image: {get_param: image}
