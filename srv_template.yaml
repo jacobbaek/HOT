@@ -30,6 +30,14 @@ parameters:
     description: Subnet used by the server
     
 resources:
+  sec_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      rules:
+      - remote_ip_prefix: 0.0.0.0/0
+        protocol: tcp
+        port_range_min: { get_param: app_port }
+        port_range_max: { get_param: app_port }
   server:
     type: OS::Nova::Server
     properties:
