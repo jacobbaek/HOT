@@ -25,6 +25,9 @@ parameters:
     type: string
     description: Network used by the server
     default: Internal_Network
+  subnet:
+    type: string
+    descipriont: Subnet used by the server
 resources:
   server:
     type: OS::Nova::Server
