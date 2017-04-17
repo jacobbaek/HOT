@@ -57,7 +57,6 @@ resources:
           subnet: { get_param: my_subnet }
           image: { get_param: my_image }
           app_port: { get_param: app_port }
-          instance_name: autoscaling_vm_%index%
   monitor:
     type: OS::Neutron::LBaaS::HealthMonitor
     properties:
