@@ -99,9 +99,9 @@ resources:
     type: OS::Ceilometer::Alarm
     properties:
       meter_name: cpu_util
-      description: Scale-up if the average CPU > 50% for 1 minute
+      description: Scale-up if the average CPU > 50% for 40 seconds
       statistic: avg
-      period: 30
+      period: 40
       evaluation_periods: 1
       threshold: 50
       alarm_actions:
@@ -112,11 +112,11 @@ resources:
     type: OS::Ceilometer::Alarm
     properties:
       meter_name: cpu_util
-      description: Scale-down if the average CPU < 15% for 10 minutes
+      description: Scale-down if the average CPU < 2% for 40 seconds
       statistic: avg
-      period: 30
+      period: 40
       evaluation_periods: 1
-      threshold: 15
+      threshold: 2
       alarm_actions:
         - {get_attr: [scaledown_policy, alarm_url]}
       comparison_operator: lt
