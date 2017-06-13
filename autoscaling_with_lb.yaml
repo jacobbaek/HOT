@@ -99,11 +99,11 @@ resources:
     type: OS::Ceilometer::Alarm
     properties:
       meter_name: cpu_util
-      description: Scale-up if the average CPU > 50% for 40 seconds
+      description: Scale-up if the average CPU > 20% for 30 seconds
       statistic: avg
-      period: 40
+      period: 30
       evaluation_periods: 1
-      threshold: 50
+      threshold: 20
       alarm_actions:
         - {get_attr: [scaleup_policy, alarm_url]}
       comparison_operator: gt
@@ -112,9 +112,9 @@ resources:
     type: OS::Ceilometer::Alarm
     properties:
       meter_name: cpu_util
-      description: Scale-down if the average CPU < 2% for 40 seconds
+      description: Scale-down if the average CPU < 2% for 30 seconds
       statistic: avg
-      period: 40
+      period: 30
       evaluation_periods: 1
       threshold: 2
       alarm_actions:
@@ -143,7 +143,7 @@ outputs:
       str_replace:
         template: >
           ceilometer statistics -m cpu_util
-          -q metadata.user_metadata.stack=$stackval -p 600 -a avg
+          -q metadata.user_metadata.stack=$stackval -p 60 -a avg
         params:
           $stackval: { get_param: "OS::stack_id" }
     description: >
