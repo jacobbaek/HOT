@@ -81,14 +81,14 @@ resources:
     type: OS::Neutron::LBaaS::LoadBalancer
     properties:
       vip_subnet: { get_param: my_subnet }
-  scaleup_policy:
+  scaleout_policy:
     type: OS::Heat::ScalingPolicy
     properties:
       adjustment_type: change_in_capacity
       auto_scaling_group_id: { get_resource: group }
       cooldown: 60
       scaling_adjustment: 1
-  scaledown_policy:
+  scalein_policy:
     type: OS::Heat::ScalingPolicy
     properties:
       adjustment_type: change_in_capacity
@@ -99,41 +99,41 @@ resources:
     type: OS::Ceilometer::Alarm
     properties:
       meter_name: cpu_util
-      description: Scale-up if the average CPU > 20% for 30 seconds
+      description: Scale-up if the average CPU > 20% for 120 seconds
       statistic: avg
       period: 30
       evaluation_periods: 1
       threshold: 20
       alarm_actions:
-        - {get_attr: [scaleup_policy, alarm_url]}
+        - {get_attr: [scaleout_policy, alarm_url]}
       comparison_operator: gt
       matching_metadata: {'metadata.user_metadata.stack': {get_param: "OS::stack_id"}}
   cpu_alarm_low:
     type: OS::Ceilometer::Alarm
     properties:
       meter_name: cpu_util
-      description: Scale-down if the average CPU < 2% for 30 seconds
+      description: Scale-down if the average CPU < 2% for 120 seconds
       statistic: avg
       period: 30
       evaluation_periods: 1
       threshold: 2
       alarm_actions:
-        - {get_attr: [scaledown_policy, alarm_url]}
+        - {get_attr: [scalein_policy, alarm_url]}
       comparison_operator: lt
       matching_metadata: {'metadata.user_metadata.stack': {get_param: "OS::stack_id"}}
 
 outputs:
   Scale-UP-URL:
-    value: {get_attr: [scaleup_policy, alarm_url]}
+    value: {get_attr: [scaleout_policy, alarm_url]}
     description: Scale-UP ALARM URL
   Scale-DOWN-URL:
-    value: {get_attr: [scaledown_policy, alarm_url]}
+    value: {get_attr: [scalein_policy, alarm_url]}
     description: Scale-DOWN ALARM URL
   Scale-UP-SIGNAL-URL:
-    value: {get_attr: [scaleup_policy, signal_url]}
+    value: {get_attr: [scaleout_policy, signal_url]}
     description: Scale-UP Signal URL
   Scale-DOWN-SIGNAL-URL:
-    value: {get_attr: [scaledown_policy, signal_url]}
+    value: {get_attr: [scalein_policy, signal_url]}
     description: Scale-DOWN Signal URL
   LB-URL-VIP:
     value: {get_attr: [lb, vip_address]}
