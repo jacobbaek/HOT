@@ -99,7 +99,7 @@ resources:
     type: OS::Ceilometer::Alarm
     properties:
       meter_name: cpu_util
-      description: Scale-up if the average CPU > 20% for 120 seconds
+      description: Scale-Out if the average CPU > 20% for 120 seconds
       statistic: avg
       period: 30
       evaluation_periods: 1
@@ -112,7 +112,7 @@ resources:
     type: OS::Ceilometer::Alarm
     properties:
       meter_name: cpu_util
-      description: Scale-down if the average CPU < 2% for 120 seconds
+      description: Scale-In if the average CPU < 2% for 120 seconds
       statistic: avg
       period: 30
       evaluation_periods: 1
