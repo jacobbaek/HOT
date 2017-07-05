@@ -1,0 +1,172 @@
+heat_template_version: 2014-10-16  
+description: A simple auto scaling group with LBaaS V2 Service.
+parameters:
+  my_flavor:
+    type: string
+    description: Flavor for the server to be created
+    default: "m1.small"
+    constraints:
+      - custom_constraint: nova.flavor
+  my_accesskey:
+    type: string
+    description: Name of an existing key-pair
+    default: "cloud_key"
+    constraints:
+      - custom_constraint: nova.keypair
+  my_image:
+    type: string
+    description: Image ID or image name to use for the server
+    default: "Cirros"
+    constraints:
+      - custom_constraint: glance.image
+  my_network:
+    type: string
+    description: Neutron Network
+    default: "network_1"
+    constraints:
+      - custom_constraint: neutron.network
+  my_subnet:
+    type: string
+    description: Neutron SUB-Network
+    default: "subnet_1"
+    constraints:
+      - custom_constraint: neutron.subnet
+  my_zone:
+    type: string
+    description: Availability Zone
+    default: "nova"
+  app_port:
+    type: string
+    description: Aplication TCP Port
+    default: "80"
+
+resources:
+  group:
+    type: OS::Heat::AutoScalingGroup
+    properties:
+      cooldown: 60
+      desired_capacity: 2
+      max_size: 5
+      min_size: 2
+      resource:
+        type: https://raw.githubusercontent.com/jacobbaek/HOT/master/srv_with_lb_template.yaml
+        properties:
+          metadata: {"metering.stack": {get_param: "OS::stack_id"}}
+          pool_id: { get_resource: pool }
+          flavor: { get_param: my_flavor }
+          network: { get_param: my_network }
+          key_name: {get_param: my_accesskey }
+          subnet: { get_param: my_subnet }
+          image: { get_param: my_image }
+          app_port: { get_param: app_port }
+  monitor:
+    type: OS::Neutron::LBaaS::HealthMonitor
+    properties:
+      delay: 5
+      type: HTTP
+      timeout: 5
+      max_retries: 3
+      pool: { get_resource: pool }
+  pool:
+    type: OS::Neutron::LBaaS::Pool
+    properties:
+      lb_algorithm: ROUND_ROBIN
+      protocol: HTTP
+      listener: { get_resource: listener }
+  listener:
+    type: OS::Neutron::LBaaS::Listener
+    properties:
+      loadbalancer: { get_resource: lb }
+      protocol: HTTP
+      protocol_port: { get_param: app_port }
+  lb:
+    type: OS::Neutron::LBaaS::LoadBalancer
+    properties:
+      vip_subnet: { get_param: my_subnet }
+  scaleout_policy:
+    type: OS::Heat::ScalingPolicy
+    properties:
+      adjustment_type: change_in_capacity
+      auto_scaling_group_id: { get_resource: group }
+      cooldown: 60
+      scaling_adjustment: 1
+  scalein_policy:
+    type: OS::Heat::ScalingPolicy
+    properties:
+      adjustment_type: change_in_capacity
+      auto_scaling_group_id: { get_resource: group }
+      cooldown: 60
+      scaling_adjustment: -1
+  cpu_alarm_high:
+    type: OS::Ceilometer::GnocchiAggregationByResourcesAlarm
+    properties:
+      description: Scale-Out if the average CPU > 20% for 120 seconds
+      metric: cpu_util
+      threshold: 20
+      comparison_operator: gt
+      alarm_actions:
+        - {get_attr: [scaleout_policy, alarm_url]}
+      resource_type: instance
+      aggregation_method: last
+      evaluation_periods: 1
+      query:
+        str_replace:
+          template: '{"=": {"server_group": "stack_id"}}'
+          params:
+            stack_id: {get_param: "OS::stack_id"}
+      matching_metadata: {'metadata.user_metadata.stack': {get_param: "OS::stack_id"}}
+  cpu_alarm_low:
+    type: OS::Ceilometer::GnocchiAggregationByResourcesAlarm
+    properties:
+      description: Scale-In if the average CPU < 2% for 120 seconds
+      metric: cpu_util
+      threshold: 2
+      alarm_actions:
+        - {get_attr: [scalein_policy, alarm_url]}
+      comparison_operator: lt
+      resource_type: instance
+      aggregation_method: last
+      evaluation_periods: 1
+            query:
+        str_replace:
+          template: '{"=": {"server_group": "stack_id"}}'
+          params:
+            stack_id: {get_param: "OS::stack_id"}
+      matching_metadata: {'metadata.user_metadata.stack': {get_param: "OS::stack_id"}}
+
+outputs:
+  Scale-UP-URL:
+    value: {get_attr: [scaleout_policy, alarm_url]}
+    description: Scale-UP ALARM URL
+  Scale-DOWN-URL:
+    value: {get_attr: [scalein_policy, alarm_url]}
+    description: Scale-DOWN ALARM URL
+  Scale-UP-SIGNAL-URL:
+    value: {get_attr: [scaleout_policy, signal_url]}
+    description: Scale-UP Signal URL
+  Scale-DOWN-SIGNAL-URL:
+    value: {get_attr: [scalein_policy, signal_url]}
+    description: Scale-DOWN Signal URL
+  LB-URL-VIP:
+    value: {get_attr: [lb, vip_address]}
+    description: VIP for our Load Balancer
+  ceilometer_query:
+    value:
+      str_replace:
+        template: >
+          ceilometer statistics -m cpu_util
+          -q metadata.user_metadata.stack=$stackval -p 60 -a avg
+        params:
+          $stackval: { get_param: "OS::stack_id" }
+    description: >
+      This is a Ceilometer query for statistics on the SURVEIL_users meter
+      Samples about OS::Nova::Server instances in this stack.  The -q
+      parameter selects Samples according to the subject's metadata.
+      When a VM's metadata includes an item of the form metering.X=Y,
+      the corresponding Ceilometer resource has a metadata item of the
+      form user_metadata.X=Y and samples about resources so tagged can
+      be queried with a Ceilometer query term of the form
+      metadata.user_metadata.X=Y.  In this case the nested stacks give
+      their VMs metadata that is passed as a nested stack parameter,
+      and this stack passes a metadata of the form metering.stack=Y,
+      where Y is this stack's ID.
