@@ -47,7 +47,7 @@ resources:
       max_size: 5
       min_size: 2
       resource:
-        type: https://raw.githubusercontent.com/jacobbaek/HOT/master/srv_with_lb_template.yaml
+        type: https://raw.githubusercontent.com/jacobbaek/HOT/master/srv_with_lb_and_volume_template.yaml
         properties:
           metadata: {"metering.stack": {get_param: "OS::stack_id"}}
           pool_id: { get_resource: pool }
