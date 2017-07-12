@@ -1,0 +1,73 @@
+heat_template_version: 2015-04-30
+description: A load-balancer server
+parameters:
+  image:
+    type: string
+    description: Image used for servers
+    default: WebSrvTemplate
+  key_name:
+    type: string
+    description: SSH key to connect to the servers
+    default: key
+  flavor:
+    type: string
+    description: flavor used by the servers
+    default: s1.large
+  pool_id:
+    type: string
+    description: Pool to contact
+  metadata:
+    type: json
+  network:
+    type: string
+    description: Network used by the server
+    default: Internal_Network
+  subnet:
+    type: string
+    description: Subnet used by the server
+  app_port:
+    type: number
+    description: application port number
+   
+resources:
+  sec_group:
+    type: OS::Neutron::SecurityGroup
+    properties:
+      rules:
+      - remote_ip_prefix: 0.0.0.0/0
+        protocol: tcp
+        port_range_min: { get_param: app_port }
+        port_range_max: { get_param: app_port }
+  server:
+    type: OS::Nova::Server
+    properties:
+      flavor: {get_param: flavor}
+      image: {get_param: image}
+      key_name: {get_param: key_name}
+      metadata: {get_param: metadata}
+      security_groups: [{ get_resource: sec_group }]
+      networks: [{network: {get_param: network} }]
+      block_device_mapping:
+        - device_name: vda
+          delete_on_termination: true
+          volume_id: { get_resource: volume } 
+  volume:
+    type: OS::Cinder::Volume
+    properties:
+      image: 'WEB'
+      size: 40
+  member:
+    type: OS::Neutron::LBaaS::PoolMember
+    properties:
+      pool: {get_param: pool_id}
+      address: {get_attr: [server, first_address]}
+      protocol_port: 80
+      subnet: { get_param: subnet }
+ 
+outputs:
+  server_ip:
+    description: IP Address of the load-balanced server.
+    value: { get_attr: [server, first_address] }
+  lb_member:
+    description: LB member details.
+    value: { get_attr: [member, show] }
