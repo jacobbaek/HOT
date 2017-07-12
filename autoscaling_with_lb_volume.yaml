@@ -29,8 +29,6 @@ parameters:
     type: string
     description: Neutron SUB-Network
     default: "subnet_1"
-    constraints:
-      - custom_constraint: neutron.subnet
   my_zone:
     type: string
     description: Availability Zone
